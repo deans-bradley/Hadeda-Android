@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/navigation_map">
+
+    <fragment
+        android:id="@+id/navigation_index"
+        android:name="com.st10083210.hadeda.ui.BirdIndex.BirdIndexFragment"
+        android:label="@string/title_index"
+        tools:layout="@layout/fragment_bird_index" />
+
+    <fragment
+        android:id="@+id/navigation_map"
+        android:name="com.st10083210.hadeda.ui.BirdMap.BirdMapFragment"
+        android:label="@string/title_map"
+        tools:layout="@layout/fragment_bird_map" />
+
+    <fragment
+        android:id="@+id/navigation_collection"
+        android:name="com.st10083210.hadeda.ui.BirdCollection.BirdCollectionFragment"
+        android:label="@string/title_collection"
+        tools:layout="@layout/fragment_bird_collection" />
+</navigation>

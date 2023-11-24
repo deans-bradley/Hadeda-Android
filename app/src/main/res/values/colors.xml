@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Day theme colours -->
+    <color name="argentinian_blue">#6DB4E3</color>
+    <color name="steel_blue">#2F81B7</color>
+    <color name="white">#FFFFFF</color>
+    <color name="white_smoke">#F4F4F4</color>
+
+
+    <!-- Night theme colours -->
+    <color name="indigo_dye">#16425B</color>
+    <color name="prussian_blue">#0A2536</color>
+    <color name="jet">#292929</color>
+    <color name="eerie_black">#222222</color>
+
+    <!-- Other colours -->
+    <color name="black">#000000</color>
+    <color name="purple">#9C27B0</color>
+</resources>
