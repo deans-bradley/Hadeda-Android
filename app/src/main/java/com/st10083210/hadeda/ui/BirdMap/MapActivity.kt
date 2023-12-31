@@ -78,13 +78,11 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-// For LocationManager { class MapActivity : AppCompatActivity(), LocationListener }
 class MapActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMapBinding
     private lateinit var locationPermissionHelper: LocationPermissionHelper
 
-    // Views
     private lateinit var backBtn: ImageButton
     private lateinit var settingsBtn: ImageButton
     private lateinit var mapView: MapView
@@ -123,11 +121,6 @@ class MapActivity : AppCompatActivity() {
         settingsBtn = binding.settingsBtn
         mapView = binding.mapView
         recenterFab = binding.recenterFab
-
-        /*
-        huh.setOnClickListener {
-            focusOn(-29.43, 31.25)
-        }*/
 
         locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
         locationPermissionHelper.checkPermissions {
@@ -343,7 +336,7 @@ class MapActivity : AppCompatActivity() {
         }
 
         // GET /v2/ref/hotspot/geo QUERY {dist}
-        val apiKey = "EBIRD_API_KEY"
+        val apiKey = BuildConfig.EBIRD_API_KEY
         val lat = userLatitude
         val lng = userLongitude
         val dist: Int = distRadius

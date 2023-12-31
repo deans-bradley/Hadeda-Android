@@ -8,7 +8,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 object HotspotGet {
 
     private const val BASE_URL = "https://api.ebird.org/v2/"
-    private val apiKey = "cgg84aonm2ti"
 
     private val client = OkHttpClient()
         .newBuilder()
