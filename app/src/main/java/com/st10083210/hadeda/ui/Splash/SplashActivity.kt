@@ -54,7 +54,7 @@ class SplashActivity : AppCompatActivity() {
         val birdService = retrofit.create(HotspotInterface::class.java)
 
         // GET /v2/data/obs/ZA/recent/notable
-        val apiKey = "cgg84aonm2ti"
+        val apiKey = "EBIRD_API_KEY"
 
         val call = birdService.getObservations(apiKey)
         call.enqueue(object: Callback<List<RecentObservationModel>> {

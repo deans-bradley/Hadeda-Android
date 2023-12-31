@@ -343,7 +343,7 @@ class MapActivity : AppCompatActivity() {
         }
 
         // GET /v2/ref/hotspot/geo QUERY {dist}
-        val apiKey = "cgg84aonm2ti"
+        val apiKey = "EBIRD_API_KEY"
         val lat = userLatitude
         val lng = userLongitude
         val dist: Int = distRadius

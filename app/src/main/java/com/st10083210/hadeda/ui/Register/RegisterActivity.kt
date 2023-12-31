@@ -13,8 +13,7 @@ import com.st10083210.hadeda.databinding.ActivityRegisterBinding
 
 class RegisterActivity : AppCompatActivity() {
 
-    //https://firebase.google.com/docs/android/setup
-    //firebase docs for implementing firebase
+    // https://firebase.google.com/docs/android/setup
     private lateinit var binding: ActivityRegisterBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
