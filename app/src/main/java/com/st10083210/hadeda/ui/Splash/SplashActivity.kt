@@ -8,6 +8,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.mapbox.maps.extension.style.expressions.dsl.generated.properties
+import com.st10083210.hadeda.BuildConfig
 import com.st10083210.hadeda.HotspotApi.HotspotInterface
 import com.st10083210.hadeda.HotspotApi.RecentObservationModel
 import com.st10083210.hadeda.MainActivity
@@ -54,7 +56,7 @@ class SplashActivity : AppCompatActivity() {
         val birdService = retrofit.create(HotspotInterface::class.java)
 
         // GET /v2/data/obs/ZA/recent/notable
-        val apiKey = "EBIRD_API_KEY"
+        val apiKey = BuildConfig.EBIRD_API_KEY
 
         val call = birdService.getObservations(apiKey)
         call.enqueue(object: Callback<List<RecentObservationModel>> {
