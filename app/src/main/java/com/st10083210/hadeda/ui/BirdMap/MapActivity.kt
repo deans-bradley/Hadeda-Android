@@ -61,6 +61,7 @@ import com.mapbox.maps.plugin.viewport.data.OverviewViewportStateOptions
 import com.mapbox.maps.plugin.viewport.state.FollowPuckViewportState
 import com.mapbox.maps.plugin.viewport.state.OverviewViewportState
 import com.mapbox.maps.plugin.viewport.viewport
+import com.st10083210.hadeda.BuildConfig
 import com.st10083210.hadeda.HotspotApi.HotspotInterface
 import com.st10083210.hadeda.HotspotApi.HotspotModel
 import com.st10083210.hadeda.MyApplication
@@ -86,8 +87,20 @@ class MapActivity : AppCompatActivity() {
     private lateinit var backBtn: ImageButton
     private lateinit var settingsBtn: ImageButton
     private lateinit var mapView: MapView
+    private lateinit var mapStyle: Style
     private lateinit var recenterFab: FloatingActionButton
-    // private lateinit var huh: FloatingActionButton
+
+    private var userLatitude: Double = 0.0
+    private var userLongitude: Double = 0.0
+    private var distRadius: Int = 0;
+
+    private val app: MyApplication by lazy {
+        application as MyApplication
+    }
+
+    private val userPreferencesRepository: UserPreferencesRepository by lazy {
+        app.userPreferences
+    }
 
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
         mapView.getMapboxMap().setCamera(CameraOptions.Builder().bearing(it).build())
@@ -116,6 +129,10 @@ class MapActivity : AppCompatActivity() {
 
         binding = ActivityMapBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        lifecycleScope.launch {
+            distRadius = app.userPreferences.userPreferencesFlow.first().distRadius
+        }
 
         backBtn = binding.bckBtn
         settingsBtn = binding.settingsBtn
@@ -150,7 +167,9 @@ class MapActivity : AppCompatActivity() {
         )
         mapView.getMapboxMap().loadStyleUri(
             Style.MAPBOX_STREETS
-        ) {
+        ) {style ->
+            mapStyle = style
+            fetchHotspotsInRegion()
             initLocationComponent()
             setupGesturesListener()
         }
@@ -227,7 +246,6 @@ class MapActivity : AppCompatActivity() {
                 .pitch(0.0)
                 .build()
         )
-
         viewportPlugin.transitionTo(followPuckViewportState) { success ->
         }
     }
@@ -255,9 +273,203 @@ class MapActivity : AppCompatActivity() {
                 .build()
         )
 
-        // val immediateTransition = viewportPlugin.makeImmediateViewportTransition()
-        // viewportPlugin.transitionTo(overviewViewportState, immediateTransition)
         viewportPlugin.transitionTo(overviewViewportState) { success ->
+        }
+    }
+
+    // API GET nearby hotspots
+    private fun fetchHotspotsInRegion() {
+        val retrofit = Retrofit.Builder()
+            .baseUrl("https://api.ebird.org/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val birdService = retrofit.create(HotspotInterface::class.java)
+
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 128)
+            return
+        }
+
+        // TODO: Check most accurate provider
+        try {
+            userLatitude = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)?.latitude!!
+            userLongitude = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)?.longitude!!
+        } catch (e: Exception) {
+            Toast.makeText(this, "Could not get your location", Toast.LENGTH_SHORT).show()
+            Log.e("locationManager", e.toString())
+        }
+
+        // GET /v2/ref/hotspot/geo QUERY {dist}
+        val apiKey = BuildConfig.EBIRD_API_KEY
+        val lat = userLatitude
+        val lng = userLongitude
+        val dist: Int = distRadius
+        val fmt = "json"
+
+        Log.e("Latitude", lat.toString())
+        Log.e("Longitude", lng.toString())
+
+        val call = birdService.getNearbyHotspots(apiKey, lat, lng, dist, fmt)
+        call.enqueue(object: Callback<List<HotspotModel>> {
+            override fun onResponse(
+                call: Call<List<HotspotModel>>,
+                response: Response<List<HotspotModel>>
+            ) {
+                if (response.isSuccessful) {
+                    Log.e("Request Success", "Status code: ${response.code()}")
+
+                    val hotspots = response.body()
+
+                    if (hotspots != null) {
+                        Log.e("Request Success", "-->$hotspots")
+                        for (point in hotspots) {
+                            addAnnotationToMap(point.longitude, point.latitude)
+                        }
+                    }
+                    else {
+                        Log.e("Request Error", "Response body is null")
+                    }
+                }
+                else {
+                    Log.e("Request Error", "API request failed with status code: ${response.code()}")
+                }
+            }
+            override fun onFailure(call: Call<List<HotspotModel>>, t: Throwable) {
+                Log.e("Request Error", "API request failed with exception: $t")
+
+                // TODO: Display error message to user
+            }
+        })
+    }
+
+    private fun addAnnotationToMap(lon : Double?, lat : Double?) {
+        bitmapFromDrawableRes(
+            this@MapActivity,
+            R.drawable.ic_map_point
+        )?.let {
+            val annotationApi = mapView.annotations
+            val pointAnnotationManager = annotationApi.createPointAnnotationManager()
+            pointAnnotationManager.addClickListener(object : OnPointAnnotationClickListener {
+                override fun onAnnotationClick(annotation: PointAnnotation): Boolean {
+                    Log.i("clicked", "$lon,$lat")
+
+                    val origin = Point.fromLngLat(userLongitude, userLatitude)
+                    val destination = Point.fromLngLat(lon!!,lat!!)
+                    val coordinates = "${origin.longitude()},${origin.latitude()}%3B${destination.longitude()},${destination.latitude()}"
+
+                    val mapBoxBaseURL = "https://api.mapbox.com/"
+                    val retrofit = Retrofit.Builder()
+                        .baseUrl(mapBoxBaseURL)
+                        .addConverterFactory(GsonConverterFactory.create())
+                        .build()
+                    val mapbBoxService = retrofit.create(RouteInterface::class.java)
+
+                    val url = "https://api.mapbox.com/directions/v5/mapbox/walking/$coordinates?alternatives=true&geometries=geojson&language=en&overview=full&steps=true&access_token=${getString(
+                        R.string.mapbox_access_token)}"
+
+                    Log.d("myTag", "URL: $url")
+
+                    val call = mapbBoxService.getRoute(
+                        coordinates = coordinates,
+                        alternatives = true,
+                        geometries = "geojson",
+                        language = "en",
+                        overview = "full",
+                        steps = true,
+                        access_token =  getString(R.string.mapbox_access_token)
+                    )
+
+                    call.enqueue(object : Callback<RouteResponseModel> {
+                        override fun onResponse (
+                            call: Call<RouteResponseModel>,
+                            response: Response<RouteResponseModel>
+                        ) {
+                            if (response.isSuccessful) {
+                                val route: RoutesModel? = response.body()?.routes?.firstOrNull()
+                                if (route != null) {
+
+                                    val coordinates = route.geometry?.coordinates?.map {
+                                        Point.fromLngLat(
+                                            it[0],
+                                            it[1]
+                                        )
+                                    }
+                                    val geometry = coordinates?.let { it1 ->
+                                        LineString.fromLngLats(
+                                            it1
+                                        )
+                                    }
+                                    val routeFeature = Feature.fromGeometry(geometry)
+                                    val featureCollection =
+                                        FeatureCollection.fromFeatures(listOf(routeFeature))
+
+                                    val source = mapStyle.getSourceAs<GeoJsonSource>("route-source")
+                                    if (source != null) {
+                                        source.featureCollection(featureCollection)
+                                    } else {
+                                        val sourceBuilder = GeoJsonSource.Builder("route-source")
+                                            .featureCollection(featureCollection)
+                                        mapStyle.addSource(sourceBuilder.build())
+
+                                        val lineLayer = lineLayer(
+                                            "route-layer", "route-source"
+                                        ) {
+                                            lineCap(LineCap.ROUND)
+                                            lineJoin(LineJoin.ROUND)
+                                            lineColor(Color.parseColor("#ff0077"))
+                                            lineWidth(5.0)
+                                        }
+                                        mapStyle.addLayer(lineLayer)
+                                    }
+                                } else {
+                                    Log.e("route data", "No route available")
+                                }
+                            } else { }
+                        }
+                        override fun onFailure(call: Call<RouteResponseModel>, t: Throwable) {
+                            Log.e("API error", "Network error: ${t.message}", t)
+                        }
+                    })
+                    return true
+                }
+            })
+            val pointAnnotationOptions: PointAnnotationOptions = PointAnnotationOptions()
+                .withPoint(Point.fromLngLat(lon!!,lat!!))
+                .withIconImage(it)
+
+            pointAnnotationManager.create(pointAnnotationOptions)
+        }
+    }
+
+    private fun bitmapFromDrawableRes(context: Context, @DrawableRes resourceId: Int) =
+        convertDrawableToBitmap(AppCompatResources.getDrawable(context, resourceId))
+
+    private fun convertDrawableToBitmap(sourceDrawable: Drawable?): Bitmap? {
+        if (sourceDrawable == null) {
+            return null
+        }
+        return if (sourceDrawable is BitmapDrawable) {
+            sourceDrawable.bitmap
+        } else {
+            val constantState = sourceDrawable.constantState ?: return null
+            val drawable = constantState.newDrawable().mutate()
+            val bitmap: Bitmap = Bitmap.createBitmap(
+                drawable.intrinsicWidth, drawable.intrinsicHeight,
+                Bitmap.Config.ARGB_8888
+            )
+            val canvas = Canvas(bitmap)
+            drawable.setBounds(0, 0, canvas.width, canvas.height)
+            drawable.draw(canvas)
+            bitmap
         }
     }
 
