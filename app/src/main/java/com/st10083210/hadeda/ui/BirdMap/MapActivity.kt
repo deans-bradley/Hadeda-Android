@@ -130,10 +130,6 @@ class MapActivity : AppCompatActivity() {
         binding = ActivityMapBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        lifecycleScope.launch {
-            distRadius = app.userPreferences.userPreferencesFlow.first().distRadius
-        }
-
         backBtn = binding.bckBtn
         settingsBtn = binding.settingsBtn
         mapView = binding.mapView
@@ -141,7 +137,10 @@ class MapActivity : AppCompatActivity() {
 
         locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
         locationPermissionHelper.checkPermissions {
-            onMapReady()
+            lifecycleScope.launch {
+                distRadius = app.userPreferences.userPreferencesFlow.first().distRadius
+                onMapReady()
+            }
         }
 
         backBtn.setOnClickListener {
@@ -169,7 +168,7 @@ class MapActivity : AppCompatActivity() {
             Style.MAPBOX_STREETS
         ) {style ->
             mapStyle = style
-            fetchHotspotsInRegion()
+            fetchHotspotsInRegion(distRadius)
             initLocationComponent()
             setupGesturesListener()
         }
@@ -278,7 +277,7 @@ class MapActivity : AppCompatActivity() {
     }
 
     // API GET nearby hotspots
-    private fun fetchHotspotsInRegion() {
+    private fun fetchHotspotsInRegion(distRadius: Int) {
         val retrofit = Retrofit.Builder()
             .baseUrl("https://api.ebird.org/")
             .addConverterFactory(GsonConverterFactory.create())
@@ -317,6 +316,7 @@ class MapActivity : AppCompatActivity() {
 
         Log.e("Latitude", lat.toString())
         Log.e("Longitude", lng.toString())
+        Log.e("Distance Radius", dist.toString())
 
         val call = birdService.getNearbyHotspots(apiKey, lat, lng, dist, fmt)
         call.enqueue(object: Callback<List<HotspotModel>> {
