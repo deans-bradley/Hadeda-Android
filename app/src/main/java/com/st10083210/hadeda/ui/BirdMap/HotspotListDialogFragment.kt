@@ -34,11 +34,11 @@ class HotspotListDialogFragment : BottomSheetDialogFragment() {
         // ArrayList of class ItemsViewModel
         val data = ArrayList<HotspotViewModel>()
 
-        val spot1: HotspotViewModel = HotspotViewModel("Name1", "Location1")
-        val spot2: HotspotViewModel = HotspotViewModel("Name2", "Location2")
-        val spot3: HotspotViewModel = HotspotViewModel("Name3", "Location3")
-        val spot4: HotspotViewModel = HotspotViewModel("Name4", "Location4")
-        val spot5: HotspotViewModel = HotspotViewModel("Name5", "Location5")
+        val spot1: HotspotViewModel = HotspotViewModel("Name1")
+        val spot2: HotspotViewModel = HotspotViewModel("Name2")
+        val spot3: HotspotViewModel = HotspotViewModel("Name3")
+        val spot4: HotspotViewModel = HotspotViewModel("Name4")
+        val spot5: HotspotViewModel = HotspotViewModel("Name5")
 
         data.add(spot1)
         data.add(spot2)
