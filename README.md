@@ -62,7 +62,7 @@ Hadeda serves as a bird-watching companion, empowering users to explore bird obs
 
 #### Contributing Guidelines
 
--   Currently Hadeda is not accepting any contributions. However, you are welcome to discuss with me at developer@deansbrad.com if you wish to contribute towards the project.
+-   Currently, Hadeda is not accepting any contributions. However, you are welcome to discuss this with me at developer@deansbrad.com if you wish to contribute to the project.
 
 #### Issues and Bug Reports
 
